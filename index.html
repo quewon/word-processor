@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ultimate-monospaced</title>
+    <link rel="stylesheet" href="global.css">
+</head>
+<body>
+    <textarea id="input">welcome to quewon's word processor!
+
+</textarea>
+    <div id="output"></div>
+    <div contenteditable id="caret-output"></div>
+</body>
+
+<script src="lib/word-processor.js" type="text/javascript"></script>
+<script type="text/javascript">
+
+// straight up got this code from stackoverflow... thanks mwag
+
+// node_walk: walk the element tree, stop when func(node) returns false
+function node_walk(node, func) {
+  var result = func(node);
+  for(node = node.firstChild; result !== false && node; node = node.nextSibling)
+    result = node_walk(node, func);
+  return result;
+};
+
+// getCaretPosition: return [start, end] as offsets to elem.textContent that
+//   correspond to the selected portion of text
+//   (if start == end, caret is at given position and no text is selected)
+function getCaretPosition(elem) {
+  var sel = window.getSelection();
+  var cum_length = [0, 0];
+
+  if(sel.anchorNode == elem)
+    cum_length = [sel.anchorOffset, sel.extentOffset];
+  else {
+    var nodes_to_find = [sel.anchorNode, sel.extentNode];
+    if(!elem.contains(sel.anchorNode) || !elem.contains(sel.extentNode))
+      return undefined;
+    else {
+      var found = [0,0];
+      var i;
+      node_walk(elem, function(node) {
+        for(i = 0; i < 2; i++) {
+          if(node == nodes_to_find[i]) {
+            found[i] = true;
+            if(found[i == 0 ? 1 : 0])
+              return false; // all done
+          }
+        }
+        
+        if(node.textContent && !node.firstChild) {
+          for(i = 0; i < 2; i++) {
+            if(!found[i])
+              cum_length[i] += node.textContent.length;
+          }
+        }
+      });
+      cum_length[0] += sel.anchorOffset;
+      cum_length[1] += sel.extentOffset;
+    }
+  }
+  if(cum_length[0] <= cum_length[1])
+    return cum_length;
+  return [cum_length[1], cum_length[0]];
+}
+
+</script>
+<script type="text/javascript">
+
+    // fonts
+    const fontCheck = new Set([
+    'Bahnschrift', 'Calibri', 'Cambria', 'Cambria Math', 'Candara', 'Comic Sans MS', 'Consolas', 'Constantia', 'Corbel', 'Ebrima', 'Franklin Gothic Medium', 'Gabriola', 'Gadugi', 'Georgia', 'HoloLens MDL2 Assets', 'Impact', 'Ink Free', 'Javanese Text', 'Leelawadee UI', 'Lucida Console', 'Lucida Sans Unicode', 'Malgun Gothic', 'Marlett', 'Microsoft Himalaya', 'Microsoft JhengHei', 'Microsoft New Tai Lue', 'Microsoft PhagsPa', 'Microsoft Sans Serif', 'Microsoft Tai Le', 'Microsoft YaHei', 'Microsoft Yi Baiti', 'MingLiU-ExtB', 'Mongolian Baiti', 'MS Gothic', 'MV Boli', 'Myanmar Text', 'Nirmala UI', 'Palatino Linotype', 'Segoe MDL2 Assets', 'Segoe Print', 'Segoe Script', 'Segoe UI', 'Segoe UI Historic', 'SimSun', 'Sitka', 'Sylfaen', 'Symbol', 'Tahoma', 'Times New Roman', 'Verdana', 'Yu Gothic', 'American Typewriter', 'Andale Mono', 'Arial Narrow', 'Arial Rounded MT Bold', 'Arial Unicode MS', 'Avenir', 'Avenir Next', 'Avenir Next Condensed', 'Baskerville', 'Big Caslon', 'Bodoni 72', 'Bodoni 72 Oldstyle', 'Bodoni 72 Smallcaps', 'Bradley Hand', 'Brush Script MT', 'Chalkboard', 'Chalkboard SE', 'Chalkduster', 'Charter', 'Cochin', 'Comic Sans MS', 'Copperplate', 'Courier', 'Didot', 'DIN Alternate', 'DIN Condensed', 'Futura', 'Geneva', 'Georgia', 'Gill Sans', 'Helvetica', 'Helvetica Neue', 'Herculanum', 'Hoefler Text', 'Impact', 'Lucida Grande', 'Luminari', 'Marker Felt', 'Menlo', 'Microsoft Sans Serif', 'Monaco', 'Noteworthy', 'Optima', 'Palatino', 'Papyrus', 'Phosphate', 'Rockwell', 'Savoye LET', 'SignPainter', 'Skia', 'Snell Roundhand', 'Times', 'Trattatello', 'Trebuchet MS', 'Verdana', 'Zapfino',
+    ].sort());
+    var availableFonts = ["serif", "sans-serif", "monospace"];
+    async function load_fonts() {
+        await document.fonts.ready;
+        const fontAvailable = new Set();
+        for (const font of fontCheck.values()) {
+            if (document.fonts.check(`12px "${font}"`)) {
+                fontAvailable.add(font);
+            }
+        }
+        availableFonts = [...fontAvailable.values()];
+    }
+    
+    //
+
+    var INPUT = document.getElementById("input");
+    var OUTPUT = document.getElementById("output");
+    var CATPUT = document.getElementById("caret-output");
+    
+    var processor = new wordmachine();
+    
+    function clr(output) {
+        while (output.lastElementChild) {
+            output.removeChild(output.lastElementChild);
+        }
+    }
+    function moveCaret(id) {
+        INPUT.selectionStart = INPUT.selectionEnd = id;
+    }
+    
+    var prev = {
+        input: "",
+        s1: 0,
+        s2: 0
+    };
+    
+    CATPUT.addEventListener("mousedown", function(e) {
+        
+    
+        let catput_update = function() {
+        
+            setTimeout(function() {
+                let s = getCaretPosition(CATPUT);
+                if (!s) return;
+                
+                console.log(s);
+                
+                INPUT.selectionStart = s[0];
+                INPUT.selectionEnd = s[1];
+                
+                clr(OUTPUT);
+                processor.update(OUTPUT);
+            }, 15);
+        
+        }
+        catput_update();
+        
+        CATPUT.onmousemove = catput_update;
+    });
+    
+    document.addEventListener("mouseup", function() {
+        setTimeout(function(){ INPUT.focus() }, 1);
+        setTimeout(update_output, 15);
+        
+        CATPUT.onmousemove = null;
+    });
+    INPUT.addEventListener("keydown", function() {
+        setTimeout(update_output, 15);
+    });
+    INPUT.addEventListener("input", update_output);
+    function update_output() {
+        let value = INPUT.value;
+        let s1 = INPUT.selectionStart;
+        let s2 = INPUT.selectionEnd;
+    
+        if (prev.input == value && prev.s1 == s1 && prev.s2 == s2) return;
+    
+        let chars = INPUT.value.split("");
+        clr(CATPUT);
+        processor.update(CATPUT);
+        clr(OUTPUT);
+        processor.update(OUTPUT);
+        window.scrollTo(0, document.body.scrollHeight);
+        
+        prev.input = value;
+        prev.s1 = s1;
+        prev.s2 = s2;
+    }
+    
+    // init
+    
+    load_fonts();
+    INPUT.focus();
+    INPUT.selectionStart = INPUT.selectionEnd = INPUT.value.length;
+    update_output();
+
+</script>
+
+</html>

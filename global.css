@@ -1,0 +1,85 @@
+* {
+    overflow-anchor: none !important;
+    scroll-snap-stop: normal !important;
+    overscroll-behavior: unset !important;
+    scroll-behavior: unset !important;
+}
+
+html {
+    font-family: monospace;
+    font-size: 13px;
+    font-smooth: never;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeSpeed;
+}
+
+#input {
+    position: absolute;
+    opacity: 0;
+    top: 0;
+    left: 0;  
+    width: 0;
+    height: 0;
+}
+
+body {
+    margin: 0;
+    overflow-x: hidden;
+/*     max-width: 600px; */
+}
+
+#caret-output, #output {
+    position: absolute;
+    top: 0;
+    left: 0;
+    word-break: break-word;
+    line-height: 1rem;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+#caret-output {
+    opacity: 0;
+    color: red;
+    width: 100%;
+    height: fit-content;
+}
+
+.selected {
+    background: yellow;
+}
+.monospace {
+    display: inline-block;
+    width: .6rem;
+    height: 1rem;
+    vertical-align: bottom;
+    text-align: center;
+}
+.cjk {
+    width: .9rem;
+}
+
+.caret {
+    display: inline;
+    pointer-events: none;
+    user-select: none;
+    color: yellow;
+    background: orange;
+}
+.careted {
+    background: orange;
+    color: white;
+}
+.caret, .careted {
+    animation: blink 500ms step-end infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.hidden {
+    display: none !important;
+}
